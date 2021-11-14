@@ -27,8 +27,15 @@
 ;;; Look lilypond-init.el or Documentation/topdocs/INSTALL.texi
 ;;; for installing instructions.
 
+
+;;; Commentary:
+;;
+
 (require 'easymenu)
 (require 'compile)
+(require 'cl-lib)
+
+;;; Code:
 
 (defconst LilyPond-version "2.5.20"
   "`LilyPond-mode' version number.")
