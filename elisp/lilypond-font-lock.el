@@ -37,7 +37,6 @@
 ;; TODO:
 ;;   - handle lexer modes (\header, \melodic) etc.
 
-
 ;;; Commentary:
 ;;
 
