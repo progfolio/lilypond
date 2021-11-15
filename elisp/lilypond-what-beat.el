@@ -1,4 +1,4 @@
-;;;; lilypond-what-beat.el --- Emacs support for checking beats and bar checks.
+;;;; lilypond-what-beat.el --- Emacs support for checking beats and bar checks.  -*- lexical-binding: t; -*-
 ;;;;
 ;;;; This file is part of LilyPond, the GNU music typesetter.
 ;;;;
@@ -44,7 +44,7 @@
 ; -> Doesn't work with << >>  expressions or nested {} expressions (unless
 ; {} is part of a keyword like \times)
 ;
-; -> Keywords abutted against a note are not visible to what-beat, and 
+; -> Keywords abutted against a note are not visible to what-beat, and
 ; can therefore surreptitiosly sneak fake notes into what-beat.
 ; | c\glissando f       <- BAD:  the f gets counted, but shouldn't
 ; | c \glissando f      <- GOOD: the f gets ignored
@@ -59,6 +59,12 @@
 ;
 
 ; Recognizes pitch & octave
+
+;;; Commentary:
+;; 
+
+;;; Code:
+
 (setq pitch-regex "\\([a-z]+[,']*\\|<[^>]*>\\)\\(=[,']*\\)?")
 ; Recognizes duration
 (setq duration-regex "[ \t\n]*\\(\\(\\(128\\|6?4\\|3?2\\|16?\\|8\\)\\([.]*\\)\\)\\([ \t]*[*][ \t]*\\([0-9]+\\)\\(/\\([1-9][0-9]*\\)\\)?\\)?\\)")
@@ -75,7 +81,7 @@
 
 
 (defun add-fractions (f1 f2)
-  "Adds two fractions, both are (numerator denominator)"
+  "Adds two fractions, both are (numerator denominator)."
   (setq result (list (+ (* (car f1) (cadr f2)) (* (car f2) (cadr f1)))
 		     (* (cadr f1) (cadr f2))))
   (setq result (reduce-fraction result 2))
@@ -86,7 +92,7 @@
 
 
 (defun reduce-fraction (f divisor)
-  "Eliminates divisor from fraction if present"
+  "Eliminates divisor from fraction if present."
   (while (and (= 0 (% (car result) divisor))
 	      (= 0 (% (cadr result) divisor))
 	      (< 1 (cadr result))
@@ -97,7 +103,7 @@
 
 
 (defun parse-duration (duration)
-  "Returns a duration string parsed as '(numerator denominator)"
+  "Returns a duration string parsed as '(numerator denominator)."
   (string-match duration-regex duration)
   (let ((result (list 1 (string-to-number (extract-match duration 2))))
 	(dots (extract-match duration 4))
@@ -111,7 +117,7 @@
 ))
 
 (defun walk-note-duration ()
-  "Returns duration of next note, moving point past note.
+  "Return duration of next note, moving point past note.
 If point is not before a note, returns nil
 If next note has no duration, returns t"
   (let ((have-pitch (looking-at pitch-regex)))
@@ -258,7 +264,7 @@ If next note has no duration, returns t"
 	  result)))))
 
 (defun LilyPond-what-beat ()
-  "Returns how much of a measure lies between last measaure '|' and point.
+  "Return how much of a measure lies between last measaure '|' and point.
 Recognizes chords, and triples."
   (interactive)
   (let ((beat (get-beat)))
@@ -266,7 +272,7 @@ Recognizes chords, and triples."
 )
 
 (defun LilyPond-electric-bar ()
-  "Indicate the number of beats in last measure when a | is inserted"
+  "Indicate the number of beats in last measure when a | is inserted."
   (interactive)
   (self-insert-command 1)
   (save-excursion
@@ -277,3 +283,7 @@ Recognizes chords, and triples."
 )))
 
 
+
+(provide 'lilypond-what-beat)
+
+;;; lilypond-what-beat.el ends here

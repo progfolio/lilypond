@@ -347,7 +347,7 @@ only."
             (dolist (f midi-files)
               (insert f " ")))
           (insert ": " master-file "\n")
-          (insert "\t" LilyPond-lilypond-command " " master-file "\n")
+          (insert "\t" lilypond-ly-command " " master-file "\n")
           (dolist (f songs)
             (insert (lilysong-file->wav f) ": " f "\n")
             (insert "\t" LilyPond-synthesize-command " $< " (or language "") "\n"))
