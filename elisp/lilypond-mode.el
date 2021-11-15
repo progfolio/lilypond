@@ -38,55 +38,33 @@
 ;;(require 'lilypond-what-beat)
 
 ;;; Code:
+(defgroup lilypond nil
+  "Major mode for editing GNU LilyPond files."
+  :group 'lilypond
+  :prefix "lilypond-")
 
-(defconst lilypond-version "2.5.20"
-  "`lilypond-mode' version number.")
+(defcustom lilypond-ly-command "lilypond"
+  "Command used to compile LY files."
+  :group 'lilypond
+  :type 'string)
 
-(defconst lilypond-help-address "bug-lilypond@gnu.org"
-  "Address accepting submission of bug reports.")
+(defcustom lilypond-midi-command "timidity"
+  "Command used to play MIDI files."
+  :group 'lilypond
+  :type 'string)
 
-(defvar lilypond-mode-hook nil
-  "*Hook called by `lilypond-mode'.")
-
-(defvar lilypond-region-file-prefix "emacs-lily"
-  "File prefix for commands on buffer or region.")
-
-(defvar lilypond-master-file nil
-  "Master file that LilyPond will be run on.")
-
-;; FIXME: find ``\score'' in buffers / make settable?
-(defun lilypond-get-master-file ()
-  "The master file."
-  (or lilypond-master-file (buffer-file-name)))
-
-(defvar lilypond-kick-xdvi nil
-  "If true, no simultaneous xdvi's are started, but reload signal is sent.")
-
-(defvar lilypond-command-history nil
-  "Command history list.")
+(defconst lilypond-version "2.5.20" "`lilypond-mode' version number.")
 
 (defvar lilypond-regexp-alist
   '(("\\([a-zA-Z]?:?[^:( \t\n]+\\)[:( \t]+\\([0-9]+\\)[:) \t]" 1 2))
   "Regexp used to match LilyPond errors.  See `compilation-error-regexp-alist'.")
-
-(defvar lilypond-imenu nil
-  "A flag to tell whether `lilypond-imenu' is turned on.")
-(make-variable-buffer-local 'lilypond-imenu)
-
-(defcustom lilypond-include-path ".:/tmp"
-  "* LilyPond include path."
-  :type 'string
-  :group 'LilyPond)
-
-(defcustom lilypond-ly-command "lilypond"
-  "Command used to compile LY files."
-  :group 'LilyPond
-  :type 'string)
+(defvar lilypond-window-conf nil "Used to store the pre-compilation window configuration.")
 
 (defun lilypond--compile-command (file)
   "Return the shell command to compile LY FILE."
   (concat lilypond-ly-command " " (shell-quote-argument file)))
 
+;;;###autoload
 (defun lilypond-compile-file (file)
   "Compile FILE using `lilypond-ly-command'.
 When called interactively, assume current buffer's FILE.
