@@ -37,7 +37,6 @@
 (require 'lilypond-indent)
 ;;(require 'lilypond-what-beat)
 
-
 ;;; Code:
 
 (defconst lilypond-version "2.5.20"
