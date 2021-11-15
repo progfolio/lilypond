@@ -99,11 +99,13 @@ If the current buffer is not backed by a FILE, prompt for FILE."
                                                  nil 'noerror)
                               (match-string 0)))
         (tempo (save-excursion (goto-char (point-min))
-                               (re-search-forward "\\(?:\\\\tempo .*?$\\)"
-                                                  nil 'noerror)
-                               (match-string 0)))
+                               (let ((tempo-re  "\\(?:\\\\tempo .*?$\\)"))
+                                 (if (re-search-backward tempo-re nil 'noerror)
+                                     (match-string 0)
+                                   (when (re-search-forward tempo-re nil 'noerror)
+                                     (match-string 0))))))
         (midi-context ""))
-    (with-current-buffer (find-file-noselect file)
+    (with-current-buffer (find-file-noselect file 'nowarn 'raw)
       (with-silent-modifications
         (insert (format "\\version %S\n"
                         (nth 2 (split-string
