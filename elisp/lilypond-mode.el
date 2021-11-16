@@ -82,55 +82,81 @@ If the current buffer is not backed by a FILE, prompt for FILE."
   (let ((open-bracket (save-excursion (re-search-backward " ?{" nil 'noerror)))
         (_close-bracket (save-excursion (re-search-forward " ?}" nil 'noerror))))
     (if open-bracket
-        (if-let ((context (save-excursion (re-search-backward  "= \\(.*\\)" nil 'noerror))))
+        (if-let ((context (save-excursion
+                            (goto-char (1+ open-bracket))
+                            (re-search-backward  "= \\(.*\\)" nil 'noerror))))
             (concat (string-trim (match-string-no-properties 1))
                     " "
                     (string-trim (buffer-substring-no-properties beg end))
                     " }")
           (user-error "Could not determine playback context")))))
 
+(defvar lilypond-play-region-process nil
+  "Process when a region is being compiled/played.")
 (defun lilypond-play-region (beg end)
   "Play region between BEG and END."
   (interactive "r")
-  (let ((file (make-temp-file "lilypond-"))
-        (context (string-trim (lilypond-region-context beg end)))
-        (lang (save-excursion (goto-char (point-min))
-                              (re-search-forward "\\(?:\\\\language [^z-a]*?$\\)"
-                                                 nil 'noerror)
-                              (match-string 0)))
-        (tempo (save-excursion (goto-char (point-min))
-                               (let ((tempo-re  "\\(?:\\\\tempo .*?$\\)"))
-                                 (if (re-search-backward tempo-re nil 'noerror)
-                                     (match-string 0)
-                                   (when (re-search-forward tempo-re nil 'noerror)
-                                     (match-string 0))))))
-        (midi-context ""))
-    (with-current-buffer (find-file-noselect file 'nowarn 'raw)
-      (with-silent-modifications
-        (insert (format "\\version %S\n"
-                        (nth 2 (split-string
-                                (shell-command-to-string "lilypond --version")))))
-        (when lang (insert lang "\n"))
-        (when tempo (setq midi-context (concat tempo "\n" midi-context)))
-        (insert (format "\\score {\n %s \n\\midi {\n %s \n}\n}" context midi-context))
-        (write-file file nil)
-        (lilypond-play nil)
-        (kill-buffer)))))
+  (let* ((context (string-trim (lilypond-region-context beg end)))
+         (lang (save-excursion (goto-char (point-min))
+                               (re-search-forward "\\(?:\\\\language [^z-a]*?$\\)"
+                                                  nil 'noerror)
+                               (match-string 0)))
+         (tempo (save-excursion (goto-char (point-min))
+                                (let ((tempo-re  "\\(?:\\\\tempo .*?$\\)"))
+                                  (if (re-search-backward tempo-re nil 'noerror)
+                                      (match-string 0)
+                                    (when (re-search-forward tempo-re nil 'noerror)
+                                      (match-string 0))))))
+         (version (format "\\version %S"
+                          (nth 2 (split-string
+                                  (shell-command-to-string "lilypond --version")))))
+         (score (mapconcat (lambda (s) (or s ""))
+                           (list version lang "\\score {"
+                                 context "\\midi {" tempo "}" "}")
+                           "\n"))
+         (file (make-temp-file "lilypond-" nil nil score))
+         (default-directory (temporary-file-directory))
+         (buffer "*lilypond-play-region*"))
+    (with-current-buffer (get-buffer-create buffer) (erase-buffer))
+    (when (process-live-p lilypond-play-region-process)
+      (kill-process lilypond-play-region-process))
+    (message "Compiling region")
+    (setq lilypond-play-region-process
+          (make-process
+           :name buffer
+           :buffer buffer
+           :command (list "lilypond" "--output=" file)
+           :sentinel (lambda (process event)
+                       (if (not (string= event "finished\n"))
+                           (display-buffer buffer)
+                         (message "Playing region")
+                         (setq lilypond-play-region-process
+                               (make-process
+                                :name buffer
+                                :buffer buffer
+                                :command (list "timidity" (concat file ".midi"))
+                                :sentinel (lambda (process event)
+                                            (if (not (string= event "finished\n"))
+                                                (display-buffer buffer)
+                                              (delete-file file)
+                                              (delete-file (concat file ".midi"))
+                                              (kill-buffer buffer)))))))))))
 
-(defun lilypond-play (as-is)
+(defun lilypond-play (as-is &optional beg end)
   "Play the midi file corresponding to the current buffer.
 If AS-IS is non-nil, do not compile current file first.
-If region is active, play that region."
-  (interactive "P")
+If BEG and END are non-nil, play that region."
+  (interactive "P\nr")
   (setq lilypond-window-conf (current-window-configuration))
-  (if (region-active-p)
-      (lilypond-play-region (region-beginning) (region-end))
-    (let* ((source (buffer-file-name))
-           (midi (file-name-with-extension source ".midi")))
-      (compile (concat
-                (unless (or as-is (file-newer-than-file-p midi source))
-                  (concat (lilypond--compile-command source) " && "))
-                lilypond-midi-command " " midi)))))
+  (if (or (region-active-p) mark-active)
+      (lilypond-play-region beg end)
+    (if-let* ((source (buffer-file-name))
+              (midi (file-name-with-extension source ".midi")))
+        (compile (concat
+                  (unless (or as-is (file-newer-than-file-p midi source))
+                    (concat (lilypond--compile-command source) " && "))
+                  lilypond-midi-command " " midi))
+      (user-error "No file backing buffer: %s" (buffer-name)))))
 
 ;;;###autoload
 (defun lilypond-version ()
