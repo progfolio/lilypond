@@ -126,7 +126,7 @@ If the current buffer is not backed by a FILE, prompt for FILE."
            :name buffer
            :buffer buffer
            :command (list "lilypond" "--output=" file)
-           :sentinel (lambda (process event)
+           :sentinel (lambda (_process event)
                        (if (not (string= event "finished\n"))
                            (display-buffer buffer)
                          (message "Playing region")
@@ -135,7 +135,7 @@ If the current buffer is not backed by a FILE, prompt for FILE."
                                 :name buffer
                                 :buffer buffer
                                 :command (list "timidity" (concat file ".midi"))
-                                :sentinel (lambda (process event)
+                                :sentinel (lambda (_process event)
                                             (if (not (string= event "finished\n"))
                                                 (display-buffer buffer)
                                               (delete-file file)
