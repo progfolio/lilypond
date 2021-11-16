@@ -142,14 +142,14 @@ If the current buffer is not backed by a FILE, prompt for FILE."
                                               (delete-file (concat file ".midi"))
                                               (kill-buffer buffer)))))))))))
 
-(defun lilypond-play (as-is &optional beg end)
+(defun lilypond-play (as-is)
   "Play the midi file corresponding to the current buffer.
 If AS-IS is non-nil, do not compile current file first.
-If BEG and END are non-nil, play that region."
-  (interactive "P\nr")
+If the region is active, play that region."
+  (interactive "P")
   (setq lilypond-window-conf (current-window-configuration))
-  (if (or (region-active-p) mark-active)
-      (lilypond-play-region beg end)
+  (if (region-active-p)
+      (lilypond-play-region (region-beginning) (region-end))
     (if-let* ((source (buffer-file-name))
               (midi (file-name-with-extension source ".midi")))
         (compile (concat
